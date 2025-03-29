@@ -156,6 +156,7 @@ class NeuralClassifier(Classifier):
             
             # Initialize the first layer with input dimension
             # self.layers.append(nn.Linear(input_dim, input_dim))
+            self.dropout = nn.Dropout(0.2)
             
             # Initialize the hidden layers
             for _ in range(n):
@@ -165,6 +166,7 @@ class NeuralClassifier(Classifier):
         
         def forward(self, x):
             # let's do a sigmoid on the very last layer
+            x = self.dropout(x)
             for i, layer in enumerate(self.layers):
                 if i == len(self.layers) - 1:
                     x = torch.sigmoid(layer(x))
