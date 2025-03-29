@@ -193,7 +193,9 @@ class NeuralClassifier(Classifier):
         self.classifier.to(self.device)
 
     def _predict_tensor(self, tensor):
-        print(tensor)
+        outputs = self.classifier(tensor.to(self.device))
+        print(outputs)
+        return outputs
     
     def batch_eval(self, batch_tensor, labels):
         # evaluates the batch tensor and then does the gradient descent

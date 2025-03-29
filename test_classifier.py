@@ -37,7 +37,7 @@ if __name__ == '__main__':
         classifier_args['num_sample'] = 1000
         classifier = SimpleClassifier(**classifier_args)
     elif args.model == 'neural':
-        classifier_args['checkpoint_path'] = None
+        classifier_args['checkpoint_path'] = './checkpoints/k_3_model_epoch_1_batch_249.pth'
         classifier_args['epochs'] = 1
 
         classifier = NeuralClassifier(**classifier_args)
@@ -46,5 +46,6 @@ if __name__ == '__main__':
 
     if args.eval:
         classifier.test()
+        classifier.eval_file()
     else:
         classifier.train()
