@@ -183,13 +183,15 @@ class NeuralClassifier(Classifier):
         self.criterion = nn.HuberLoss(delta=1.0)
         self.checkpoint_path = checkpoint_path
 
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         if self.checkpoint_path:
-            checkpoint = torch.load(self.checkpoint_path)
-            self.classifier.load_state_dict(checkpoint['model_state_dict'])
-            self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+            checkpoint = torch.load(self.checkpoint_path, map_location=self.device)
+            print(checkpoint.keys())
+            # self.classifier.load_state_dict(checkpoint['model_state_dict'])
+            self.classifier.load_state_dict(checkpoint)
+            # self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
 
         self.epochs = epochs
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.classifier.to(self.device)
 
     def _predict_tensor(self, tensor):
@@ -250,8 +252,15 @@ class NeuralClassifier(Classifier):
                             current_batch = None
                             batch_num = i // self.batch_size
                             if batch_num % 50 == 49:
-                                torch.save(self.classifier.state_dict(), f'k_{self.kmer_len}_model_epoch_{epoch + 1}_batch_{batch_num}.pth')
-                    torch.save(self.classifier.state_dict(), f'k_{self.kmer_len}_model_epoch_{epoch + 1}.pth')
+                                torch.save(self.classifier.state_dict(), )
+                                torch.save({
+                                    'model_state_dict': self.classifier.state_dict(),
+                                    'optimizer_state_dict': self.optimizer.state_dict(),
+                                }, f'k_{self.kmer_len}_model_epoch_{epoch + 1}_batch_{batch_num}.pth')
+                    torch.save({
+                        'model_state_dict': self.classifier.state_dict(),
+                        'optimizer_state_dict': self.optimizer.state_dict(),
+                    }, f'k_{self.kmer_len}_model_epoch_{epoch + 1}.pth')
 
 
 class BayesianClassifier(Classifier):
