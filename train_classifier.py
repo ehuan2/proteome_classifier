@@ -252,7 +252,7 @@ class NeuralClassifier(Classifier):
                             current_batch = None
                             batch_num = i // self.batch_size
                             if batch_num % 50 == 49:
-                                torch.save(self.classifier.state_dict(), )
+                                # torch.save(self.classifier.state_dict(), )
                                 torch.save({
                                     'model_state_dict': self.classifier.state_dict(),
                                     'optimizer_state_dict': self.optimizer.state_dict(),
