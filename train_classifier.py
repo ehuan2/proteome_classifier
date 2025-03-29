@@ -245,7 +245,9 @@ class NeuralClassifier(Classifier):
                             labels = labels.unsqueeze(1)
                             self.batch_eval(current_batch, labels)
                             current_batch = None
-                            torch.save(self.classifier.state_dict(), f'k_{self.kmer_len}_model_epoch_{epoch + 1}_batch_{i // self.batch_size}.pth')
+                            batch_num = i // self.batch_size
+                            if batch_num % 10 == 9:
+                                torch.save(self.classifier.state_dict(), f'k_{self.kmer_len}_model_epoch_{epoch + 1}_batch_{batch_num}.pth')
                     torch.save(self.classifier.state_dict(), f'k_{self.kmer_len}_model_epoch_{epoch + 1}.pth')
 
 
