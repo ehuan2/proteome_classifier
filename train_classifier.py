@@ -246,7 +246,7 @@ class NeuralClassifier(Classifier):
                             self.batch_eval(current_batch, labels)
                             current_batch = None
                             batch_num = i // self.batch_size
-                            if batch_num % 10 == 9:
+                            if batch_num % 50 == 49:
                                 torch.save(self.classifier.state_dict(), f'k_{self.kmer_len}_model_epoch_{epoch + 1}_batch_{batch_num}.pth')
                     torch.save(self.classifier.state_dict(), f'k_{self.kmer_len}_model_epoch_{epoch + 1}.pth')
 
