@@ -193,6 +193,7 @@ class NeuralClassifier(Classifier):
         self.classifier.to(self.device)
 
     def _predict_tensor(self, tensor):
+        self.classifier.eval()
         outputs = self.classifier(tensor.to(self.device))
         print(outputs)
         return outputs
