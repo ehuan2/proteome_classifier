@@ -189,6 +189,8 @@ class NeuralClassifier(Classifier):
             self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
 
         self.epochs = epochs
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.classifier.to(self.device)
 
     def _predict_tensor(self, tensor):
         print(tensor)
@@ -196,6 +198,11 @@ class NeuralClassifier(Classifier):
     def batch_eval(self, batch_tensor, labels):
         # evaluates the batch tensor and then does the gradient descent
         self.optimizer.zero_grad()
+
+        # send the batched tensor to the device
+        batch_tensor = batch_tensor.to(self.device)
+        labels = labels.to(self.device)
+
         outputs = self.classifier(batch_tensor)
         loss = self.criterion(outputs, labels)
         loss.backward()
