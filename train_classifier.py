@@ -105,44 +105,91 @@ class Classifier():
         with open(self.final_test, 'r') as final_test_file:
             with open(self.output_csv, 'w') as csv_file:
                 for record in SeqIO.parse(final_test_file, 'fasta'):
-                    csv_file.write(f'{record.id}, {self.classify_seq(record.seq)[0]}\n')
+                    csv_file.write(f'{record.id}, {self.classify_seq(record.seq).item()}\n')
 
     def _score(self, pos_tensor, neg_tensor):
         return torch.sum(
-            torch.abs(
-                torch.log(
-                    (pos_tensor + sys.float_info.epsilon) /
-                    (neg_tensor + sys.float_info.epsilon)
-                )
+            torch.log(
+                (pos_tensor + sys.float_info.epsilon) /
+                (neg_tensor + sys.float_info.epsilon)
             )
         )
 
 
 class SimpleClassifier(Classifier):
-    def __init__(self, kmer_len, mapping, pos_path, neg_path, test_pos, test_neg, final_test, output_csv, num_sample):
+    def __init__(self, kmer_len, mapping, pos_path, neg_path, test_pos, test_neg, final_test, output_csv, num_sample, original_file):
         super().__init__(kmer_len, mapping, pos_path, neg_path, test_pos, test_neg, final_test, output_csv)
         # how many peptides to sample from randomly
         self.num_sample = num_sample
+
+        self.original_file = original_file
+        from data.preprocess_data import filter_improper, get_chars
+        chars, mapping = get_chars(self.final_test)
+        print(chars, mapping)
+        self.records = filter_improper(chars, self.original_file, './garbage_path')
 
     def _predict_tensor(self, tensor):
         # for the simple classifier, we build a score by randomly sampling
         # num_sample peptides from our negative dataset
         # where we take the lowest score as the chance of it being most random
-        sample_peptides = random.sample(range(self.train_count), self.num_sample) if self.num_sample is not None else None
+        sample_peptides = random.sample(range(len(self.records)), self.num_sample) if self.num_sample is not None else None
 
-        score = None
+        probs = []
+        best_prob = 0.0
+        best_neg_score = None
+        best_pos_score = None
+
+        # now we want to build a negative sample
+        for i in sample_peptides:
+            # let's build a negative sample score, by first splitting the sample
+            # and then shuffling it around!
+
+            min_length = 20
+            max_length = 40
+
+            fragments = []
+            peptide = self.records[i].seq
+            while len(peptide) > max_length:
+                split_point = random.randint(min_length, min(max_length, len(peptide)))
+                fragment = peptide[:split_point]
+                fragments.append(fragment)
+                peptide = peptide[split_point:]
+
+            # let's create a negative and positive sample for each of these
+            for fragment in fragments:
+                # we'll be measuring the likelihood that it's more likely to be a random sample vs. a positive sample
+                pos_score = self._score(tensor, self._seq_to_freq_array(fragment))
+
+                seq_chars = list(str(fragment))
+                random.shuffle(seq_chars)
+                neg_sample = ''.join(seq_chars)
+                neg_score = self._score(tensor, self._seq_to_freq_array(neg_sample))
+
+                # print(neg_score, pos_score)
+                # we define our probability as transforming the log-log ratio to (0, 1) through the common softmax technique
+                # ratio = torch.abs(torch.clamp(neg_score / (pos_score + sys.float_info.epsilon), max=np.exp(50), min=-np.exp(50)))
+                # prob = ratio / (1.0 + ratio)
+                # let's only take the positive score
+                prob = (1.0 / (1.0 + torch.exp(torch.clamp(pos_score, max=50, min=-50))))
+                probs.append(prob)
+                if best_prob < prob:
+                    best_prob = prob
+                    best_neg_score = neg_score
+                    best_pos_score = pos_score
+
 
         # the way the negative one goes is that we only want to score against q
-        with open(self.neg_path, 'r') as neg_path_file:
-            for i, record in tqdm(enumerate(SeqIO.parse(neg_path_file, 'fasta')), total=self.train_count):
-                if sample_peptides is None or i in sample_peptides:
-                    next_score = self._score(tensor, self._seq_to_freq_array(record.seq))
-                    score = torch.min(score, next_score) if score is not None else next_score
+        # with open(self.neg_path, 'r') as neg_path_file:
+            # for i, record in tqdm(enumerate(SeqIO.parse(neg_path_file, 'fasta')), total=self.train_count):
+            #     if sample_peptides is None or i in sample_peptides:
+            #         next_score = self._score(tensor, self._seq_to_freq_array(record.seq))
+            #         score = torch.min(score, next_score) if score is not None else next_score
 
-                if sample_peptides is not None and max(sample_peptides) < i:
-                    break
+            #     if sample_peptides is not None and max(sample_peptides) < i:
+            #         break
                     
-        print(f'Final score: {score}')
+        print(f'Final probability: {sum(probs)/len(probs), best_prob, best_neg_score, best_pos_score}')
+        return sum(probs)/len(probs)
 
     def train(self):
         # no training necessary for this...

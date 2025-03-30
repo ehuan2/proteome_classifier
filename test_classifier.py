@@ -30,12 +30,13 @@ if __name__ == '__main__':
         'neg_path': './data/shuffle_k_fold_valid.fasta',
         'test_pos': './data/test_fasta.fasta',
         'test_neg': './data/shuffle_test_fasta.fasta',
-        'output_csv': './predictions.csv',
+        'output_csv': './unrounded_predictions.csv',
         'final_test': './input/public_test.fasta'
     }
 
     if args.model == 'simple':
-        classifier_args['num_sample'] = 1000
+        classifier_args['num_sample'] = 100
+        classifier_args['original_file'] = './data/uniprot_sprot.fasta'
         classifier = SimpleClassifier(**classifier_args)
     elif args.model == 'neural':
         classifier_args['checkpoint_path'] = args.checkpoint
