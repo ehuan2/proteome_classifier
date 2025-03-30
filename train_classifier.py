@@ -78,7 +78,7 @@ class Classifier():
         # given a sequence, calculate its frequency and then pass through the prediction
         # first however, we need to turn this sequence to a kmer frequency array
         # the first person to make a contiguous block of memory must've gotten arrays
-        self._predict_tensor(self._seq_to_freq_array(seq))
+        return self._predict_tensor(self._seq_to_freq_array(seq))
 
     def train(self):
         pass
@@ -105,7 +105,7 @@ class Classifier():
         with open(self.final_test, 'r') as final_test_file:
             with open(self.output_csv, 'w') as csv_file:
                 for record in SeqIO.parse(final_test_file, 'fasta'):
-                    csv_file.write(f'{record}, {self.classify_seq(record.seq)}')
+                    csv_file.write(f'{record.id}, {self.classify_seq(record.seq)[0]}\n')
 
     def _score(self, pos_tensor, neg_tensor):
         return torch.sum(
@@ -167,11 +167,8 @@ class NeuralClassifier(Classifier):
         def forward(self, x):
             # let's do a sigmoid on the very last layer
             x = self.dropout(x)
-            for i, layer in enumerate(self.layers):
-                if i == len(self.layers) - 1:
-                    x = torch.sigmoid(layer(x))
-                else:
-                    x = torch.relu(layer(x))
+            for layer in self.layers:
+                x = torch.relu(layer(x))
             return x
 
     def __init__(self, kmer_len, mapping, pos_path, neg_path, test_pos, test_neg, final_test, output_csv, checkpoint_path, epochs):
@@ -186,10 +183,8 @@ class NeuralClassifier(Classifier):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         if self.checkpoint_path:
             checkpoint = torch.load(self.checkpoint_path, map_location=self.device)
-            print(checkpoint.keys())
-            # self.classifier.load_state_dict(checkpoint['model_state_dict'])
-            self.classifier.load_state_dict(checkpoint)
-            # self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+            self.classifier.load_state_dict(checkpoint['model_state_dict'])
+            self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
 
         self.epochs = epochs
         self.classifier.to(self.device)
@@ -197,7 +192,7 @@ class NeuralClassifier(Classifier):
     def _predict_tensor(self, tensor):
         self.classifier.eval()
         outputs = self.classifier(tensor.to(self.device))
-        print(outputs)
+        # print(outputs)
         return outputs
     
     def batch_eval(self, batch_tensor, labels):

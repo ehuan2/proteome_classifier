@@ -15,6 +15,7 @@ def parse_args():
     )
     parser.add_argument('-k', '--kmer', type=int, default=2, help='Output dataset name')
     parser.add_argument('--eval', action='store_true')
+    parser.add_argument('-c', '--checkpoint', type=str)
     args = parser.parse_args()
     return args
 
@@ -37,7 +38,7 @@ if __name__ == '__main__':
         classifier_args['num_sample'] = 1000
         classifier = SimpleClassifier(**classifier_args)
     elif args.model == 'neural':
-        classifier_args['checkpoint_path'] = './checkpoints/k_3_model_epoch_1_batch_249.pth'
+        classifier_args['checkpoint_path'] = args.checkpoint
         classifier_args['epochs'] = 1
 
         classifier = NeuralClassifier(**classifier_args)

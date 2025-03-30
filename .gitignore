@@ -1,2 +1,3 @@
 __pycache__/**
 activate_venv.sh
+data/*.fasta
