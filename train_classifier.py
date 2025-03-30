@@ -159,16 +159,22 @@ class NeuralClassifier(Classifier):
             self.dropout = nn.Dropout(0.2)
             
             # Initialize the hidden layers
-            for _ in range(n):
+            for _ in range(n - 1):
                 output_dim = int(input_dim / 20)
                 self.layers.append(nn.Linear(input_dim, output_dim))
                 input_dim = output_dim
+
+            # do the final one to two
+            self.layers.append(nn.Linear(input_dim, 2))
         
         def forward(self, x):
             # let's do a sigmoid on the very last layer
             x = self.dropout(x)
-            for layer in self.layers:
-                x = torch.relu(layer(x))
+            for i, layer in enumerate(self.layers):
+                if i == len(self.layers) - 1:
+                    x = torch.softmax(layer(x))
+                else:
+                    x = torch.relu(layer(x))
             return x
 
     def __init__(self, kmer_len, mapping, pos_path, neg_path, test_pos, test_neg, final_test, output_csv, checkpoint_path, epochs):
@@ -176,8 +182,7 @@ class NeuralClassifier(Classifier):
         self.classifier = NeuralClassifier.LinearClassifier(kmer_len, 20**kmer_len)
         self.batch_size = 512
         self.optimizer = optim.Adam(self.classifier.parameters(), lr=0.01)
-        # just do a simple huber loss, robust to outliers
-        self.criterion = nn.HuberLoss(delta=1.0)
+        self.criterion = nn.CrossEntropyLoss()
         self.checkpoint_path = checkpoint_path
 
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
