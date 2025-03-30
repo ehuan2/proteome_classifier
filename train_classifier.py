@@ -172,7 +172,7 @@ class NeuralClassifier(Classifier):
             x = self.dropout(x)
             for i, layer in enumerate(self.layers):
                 if i == len(self.layers) - 1:
-                    x = torch.softmax(layer(x))
+                    x = torch.softmax(layer(x), dim=0)
                 else:
                     x = torch.relu(layer(x))
             return x
